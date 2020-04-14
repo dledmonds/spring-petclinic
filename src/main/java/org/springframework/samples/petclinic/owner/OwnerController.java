@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
 import javax.validation.Valid;
@@ -140,6 +141,16 @@ class OwnerController {
 		}
 		mav.addObject(owner);
 		return mav;
+	}
+
+	@ResponseBody
+	@GetMapping("/owners/{ownerId}/debug")
+	public String showOwnerDebug(@PathVariable("ownerId") int ownerId) {
+		Owner owner = this.owners.findById(ownerId);
+		for (Pet pet : owner.getPets()) {
+			pet.setVisitsInternal(visits.findByPetId(pet.getId()));
+		}
+		return owner.toString();
 	}
 
 }
