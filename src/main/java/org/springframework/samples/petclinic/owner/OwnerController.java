@@ -24,12 +24,16 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.servlet.ModelAndView;
 
+import javax.crypto.Cipher;
+import javax.crypto.spec.SecretKeySpec;
 import javax.validation.Valid;
 import java.util.Collection;
 import java.util.Map;
+import java.util.logging.Logger;
 
 /**
  * @author Juergen Hoeller
@@ -41,6 +45,8 @@ import java.util.Map;
 class OwnerController {
 
 	private static final String VIEWS_OWNER_CREATE_OR_UPDATE_FORM = "owners/createOrUpdateOwnerForm";
+
+	private static final Logger LOG = Logger.getGlobal();
 
 	private final OwnerRepository owners;
 
@@ -151,6 +157,32 @@ class OwnerController {
 			pet.setVisitsInternal(visits.findByPetId(pet.getId()));
 		}
 		return owner.toString();
+	}
+
+	@GetMapping("/owners/news")
+	public String showNews(@RequestParam(value = "url", defaultValue = "https://www.bbc.co.uk") String url) {
+		// to protect from the bad guys, we need to encrypt our URL before saving in the
+		// logs, then they can't log forge us, ahahahah!
+		// why is crypto so hard, come back to this later ...
+		try {
+			String secret = "nice&safe-Isthis"; // TODO why does this have to be 16
+												// character, head scratch!
+			Cipher c = Cipher.getInstance("AES/ECB/NoPadding");
+			c.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(secret.getBytes(), "AES"));
+
+			// can only work with block sizes of 16 for some reason ...
+			String paddedStr = url;
+			for (int i = 0; i < paddedStr.length() % 16; i++)
+				paddedStr += "0";
+			byte[] result = c.doFinal(paddedStr.getBytes());
+
+			LOG.info("Going to URL " + new String(result));
+		}
+		catch (Exception e) {
+			LOG.severe("Something broke here " + e.getStackTrace().toString());
+		}
+
+		return "redirect:" + url;
 	}
 
 }
